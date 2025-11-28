@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   odds-harvester:
     build:
@@ -7,15 +5,18 @@ services:
       dockerfile: Dockerfile
       target: local-dev
     container_name: odds-harvester
+    tty: true
+    stdin_open: true
     environment:
       - PYTHONUNBUFFERED=1
+      - PYTHONFAULTHANDLER=1
     volumes:
       # Mount output directory to persist scraped data
       - ./output:/var/task/output
     # Default command: scrape upcoming matches for Spain La Liga
     # Override SCRAPE_DATE with current date in YYYYMMDD format (e.g., 20251128)
     command: >
-      xvfb-run -- python3 -m src.main scrape_upcoming
+      python3 -m src.main scrape_upcoming
       --sport football
       --leagues spain-laliga
       --date ${SCRAPE_DATE:-20251128}
@@ -24,6 +25,7 @@ services:
       --file_path /var/task/output/spain-laliga-odds.json
       --format json
       --headless
+      --browser_user_agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
     # Resource limits
     deploy:
       resources:
@@ -46,7 +48,7 @@ services:
     volumes:
       - ./output:/var/task/output
     command: >
-      xvfb-run -- python3 -m src.main scrape_historic
+      python3 -m src.main scrape_historic
       --sport football
       --leagues spain-laliga
       --season ${SEASON:-2024-2025}
@@ -55,6 +57,7 @@ services:
       --file_path /var/task/output/spain-laliga-historic.json
       --format json
       --headless
+      --browser_user_agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
     deploy:
       resources:
         limits:
@@ -76,7 +79,7 @@ services:
     volumes:
       - ./output:/var/task/output
     command: >
-      xvfb-run -- python3 -m src.main scrape_upcoming
+      python3 -m src.main scrape_upcoming
       --sport football
       --leagues ${LEAGUES:-spain-laliga,england-premier-league,italy-serie-a}
       --date ${SCRAPE_DATE:-20251128}
@@ -85,6 +88,7 @@ services:
       --file_path /var/task/output/multi-league-odds.json
       --format json
       --headless
+      --browser_user_agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
     deploy:
       resources:
         limits:
