@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  odds-harvester:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: local-dev
+    container_name: odds-harvester
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Mount output directory to persist scraped data
+      - ./output:/var/task/output
+    # Default command: scrape upcoming matches for Spain La Liga
+    # Override SCRAPE_DATE with current date in YYYYMMDD format (e.g., 20251128)
+    command: >
+      xvfb-run -- python3 -m src.main scrape_upcoming
+      --sport football
+      --leagues spain-laliga
+      --date ${SCRAPE_DATE:-20251128}
+      --markets 1x2
+      --storage local
+      --file_path /var/task/output/spain-laliga-odds.json
+      --format json
+      --headless
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  # Alternative service for historical data scraping
+  odds-harvester-historic:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: local-dev
+    container_name: odds-harvester-historic
+    profiles:
+      - historic
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./output:/var/task/output
+    command: >
+      xvfb-run -- python3 -m src.main scrape_historic
+      --sport football
+      --leagues spain-laliga
+      --season ${SEASON:-2024-2025}
+      --markets 1x2
+      --storage local
+      --file_path /var/task/output/spain-laliga-historic.json
+      --format json
+      --headless
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  # Service for scraping multiple leagues at once
+  odds-harvester-multi-league:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: local-dev
+    container_name: odds-harvester-multi-league
+    profiles:
+      - multi
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./output:/var/task/output
+    command: >
+      xvfb-run -- python3 -m src.main scrape_upcoming
+      --sport football
+      --leagues ${LEAGUES:-spain-laliga,england-premier-league,italy-serie-a}
+      --date ${SCRAPE_DATE:-20251128}
+      --markets 1x2,btts
+      --storage local
+      --file_path /var/task/output/multi-league-odds.json
+      --format json
+      --headless
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
